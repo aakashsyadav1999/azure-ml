@@ -31,7 +31,7 @@ jobs:
         version: "latest"
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
@@ -45,7 +45,7 @@ jobs:
         uv run python src/generate_data.py --output-dir data --test-size 0.2
     
     - name: Upload data artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: iris-training-data
         path: data/
@@ -65,12 +65,12 @@ jobs:
         version: "latest"
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
     - name: Download data artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: iris-training-data
         path: data/
