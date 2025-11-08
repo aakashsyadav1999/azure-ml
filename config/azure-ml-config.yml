@@ -1,0 +1,24 @@
+# Azure ML workspace configuration
+workspace:
+  subscription_id: "your-subscription-id"  # Replace with your Azure subscription ID
+  resource_group: "your-resource-group"    # Replace with your resource group name
+  name: "your-workspace-name"              # Replace with your Azure ML workspace name
+  location: "eastus"                       # Azure region
+
+# Compute configuration
+compute:
+  name: "ml-training-cluster"
+  vm_size: "Standard_DS3_v2"               # VM size for training
+  min_instances: 0
+  max_instances: 1
+
+# Environment configuration
+environment:
+  name: "iris-training-env"
+  description: "Environment for Iris classification training"
+  conda_file: "config/conda-env.yml"
+
+# Experiment configuration
+experiment:
+  name: "iris-classification"
+  description: "Iris species classification experiment"
