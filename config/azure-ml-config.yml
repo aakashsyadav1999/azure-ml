@@ -1,9 +1,9 @@
 # Azure ML workspace configuration
 workspace:
-  subscription_id: "your-subscription-id"  # Replace with your Azure subscription ID
-  resource_group: "your-resource-group"    # Replace with your resource group name
-  name: "your-workspace-name"              # Replace with your Azure ML workspace name
-  location: "eastus"                       # Azure region
+  subscription_id: "146253af-8dff-4ab7-b56f-c2bf8f847a24"  # Your actual subscription ID
+  resource_group: "aakash-trial"                    # Replace with your resource group name
+  name: "iris-dataset"                              # Replace with your Azure ML workspace name
+  location: "central india"                                       # Azure region
 
 # Compute configuration
 compute:
