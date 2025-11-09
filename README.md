@@ -20,12 +20,11 @@ This project demonstrates:
 
 ```
 azure-ml-trial/
-├── � src/                          # Source code
-│   ├── � generate_data.py         # Iris dataset generation
+├── 📂 src/                          # Source code
+│   ├── 📄 generate_data.py         # Iris dataset generation
 │   ├── 📄 train_model.py           # Model training script  
-│   ├── � azure_ml_pipeline.py     # Azure ML job submission
-│   └── 📄 deploy_model.py          # Model deployment script
-├── � config/                      # Configuration files
+│   └── 📄 azure_ml_pipeline.py     # Azure ML job submission & model registration
+├── 📂 config/                      # Configuration files
 │   ├── 📄 azure-ml-config.yml      # Azure ML workspace config
 │   └── 📄 conda-env.yml            # Conda environment
 ├── 📂 .github/workflows/           # CI/CD automation
@@ -39,14 +38,10 @@ azure-ml-trial/
 ├── 📂 outputs/                     # Training outputs (Azure ML)
 │   ├── 📄 latest_model.joblib     # Model saved by training job
 │   └── 📄 latest_metadata.json    # Training metrics and metadata
-├── 📂 deployment/                  # Deployment artifacts (optional)
-│   ├── 📄 score.py                # Scoring script (for manual deployment)
-│   └── 📄 conda-env.yml           # Inference environment
-├── 📄 test_endpoint.py             # Endpoint testing script (for manual use)
-├── 📄 requirements.txt             # Python dependencies
+├──  requirements.txt             # Python dependencies
 ├── 📄 main.py                      # Entry point for demo
-├── � README.md                    # This file
-└── 📄 DEPLOYMENT.md                # Deployment guide
+├── 📄 README.md                    # This file
+└── 📄 DEPLOYMENT_GUIDE.md          # Deployment guide
 ```
 
 ## 🎮 Quick Start Demo
@@ -58,25 +53,16 @@ echo "Demo update $(date)" >> README.md
 
 # Commit and push to dev branch
 git add .
-git commit -m "Trigger Azure ML training and deployment"
+git commit -m "Trigger Azure ML training and model registration"
 git push origin dev
 
-# 🎉 Watch GitHub Actions → Azure ML Studio for training and deployment!
+# 🎉 Watch GitHub Actions → Azure ML Studio for training progress!
 ```
 
 ### Option 2: Manual Workflow Trigger
 1. Go to [GitHub Actions](https://github.com/aakashsyadav1999/azure-ml/actions)
-2. Click "Azure ML Automated Training Pipeline"
+2. Click "Azure ML Training & Model Registration Pipeline"
 3. Click "Run workflow" → Select `dev` branch → "Run workflow"
-
-### Option 3: Test Deployed Endpoint
-```bash
-# Test your deployed model endpoint
-python test_endpoint.py --endpoint-url YOUR_SCORING_URI
-
-# Or check deployment_info.json for endpoint details
-cat deployment/deployment_info.json
-```
 
 ## 🛠️ Local Development
 
@@ -220,16 +206,11 @@ Validation classification report:
 Since deployment is handled separately, you can deploy your registered model using:
 
 ```bash
-# Option 1: Use the deployment script (when ready)
-python src/deploy_model.py \
-  --model-name iris-classifier \
-  --endpoint-name my-iris-endpoint
-
-# Option 2: Azure CLI
+# Option 1: Azure CLI
 az ml online-endpoint create --name iris-endpoint --file endpoint.yml
 az ml online-deployment create --name iris-deployment --file deployment.yml
 
-# Option 3: Azure ML Studio UI
+# Option 2: Azure ML Studio UI
 # Navigate to Models → Select iris-classifier → Deploy
 ```
    - Loads Iris dataset (150 samples, 4 features, 3 classes)

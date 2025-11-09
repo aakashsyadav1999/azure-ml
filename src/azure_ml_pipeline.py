@@ -64,8 +64,8 @@ def get_or_create_compute(ml_client, config):
         compute = AmlCompute(
             name=compute_name,
             size=compute_config['vm_size'],
-            min_instances=0,
-            max_instances=compute_config['max_nodes']
+            min_instances=compute_config.get('min_instances', 0),
+            max_instances=compute_config.get('max_instances', 1)
         )
         
         ml_client.compute.begin_create_or_update(compute).result()

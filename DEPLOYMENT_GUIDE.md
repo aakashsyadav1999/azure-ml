@@ -10,22 +10,7 @@ This guide shows you how to deploy your trained and registered iris-classifier m
 
 ## 🎯 Deployment Options
 
-### Option 1: Using the Deploy Script (Automated)
-
-```bash
-# Deploy the latest registered model
-python src/deploy_model.py \
-  --config config/azure-ml-config.yml \
-  --model-name iris-classifier \
-  --endpoint-name iris-classifier-endpoint \
-  --deployment-name iris-deployment \
-  --test-endpoint \
-  --tenant-id $AZURE_TENANT_ID \
-  --client-id $AZURE_CLIENT_ID \
-  --client-secret $AZURE_CLIENT_SECRET
-```
-
-### Option 2: Azure CLI (Manual Control)
+### Option 1: Azure CLI (Recommended)
 
 ```bash
 # 1. Create endpoint configuration
@@ -54,7 +39,7 @@ az ml online-deployment create --file deployment.yml
 az ml online-endpoint update --name iris-classifier-endpoint --traffic "iris-deployment=100"
 ```
 
-### Option 3: Azure ML Studio (GUI)
+### Option 2: Azure ML Studio (GUI)
 
 1. **Navigate to Azure ML Studio**: https://ml.azure.com
 2. **Go to Models** → Select `iris-classifier` → Latest version
