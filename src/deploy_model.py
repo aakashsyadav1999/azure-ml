@@ -160,11 +160,30 @@ def deploy_model(ml_client, model, environment, endpoint_name="iris-classifier-e
     # Create scoring script
     scoring_script_path = create_scoring_script()
     
-    # Check if endpoint exists
+    # Check if endpoint exists and clean up if in bad state
     try:
-        endpoint = ml_client.online_endpoints.get(endpoint_name)
-        print(f"Using existing endpoint: {endpoint_name}")
+        existing_endpoint = ml_client.online_endpoints.get(endpoint_name)
+        print(f"Found existing endpoint: {endpoint_name}")
+        
+        # Check if endpoint is in a failed state
+        if hasattr(existing_endpoint, 'provisioning_state') and existing_endpoint.provisioning_state in ['Failed', 'Deleting']:
+            print(f"⚠️  Endpoint is in {existing_endpoint.provisioning_state} state. Deleting and recreating...")
+            try:
+                ml_client.online_endpoints.begin_delete(endpoint_name).result()
+                print("✅ Old endpoint deleted successfully")
+                existing_endpoint = None  # Force recreation
+            except Exception as delete_error:
+                print(f"Warning: Could not delete failed endpoint: {delete_error}")
+                existing_endpoint = None
+        else:
+            print(f"✅ Endpoint is healthy (state: {getattr(existing_endpoint, 'provisioning_state', 'Unknown')})")
+            endpoint = existing_endpoint
     except Exception as get_error:
+        print(f"Endpoint does not exist or cannot be accessed: {get_error}")
+        existing_endpoint = None
+    
+    # Create endpoint if needed
+    if not existing_endpoint:
         print(f"Creating new endpoint: {endpoint_name}")
         endpoint = ManagedOnlineEndpoint(
             name=endpoint_name,
@@ -189,7 +208,7 @@ def deploy_model(ml_client, model, environment, endpoint_name="iris-classifier-e
             else:
                 raise create_error
     
-    # Create deployment
+    # Create deployment with smaller VM size for quota efficiency
     deployment = ManagedOnlineDeployment(
         name=deployment_name,
         endpoint_name=endpoint_name,
@@ -199,13 +218,34 @@ def deploy_model(ml_client, model, environment, endpoint_name="iris-classifier-e
             code="deployment",
             scoring_script="score.py"
         ),
-        instance_type="Standard_DS2_v2",
+        instance_type="Standard_DS1_v2",  # Smaller VM size - uses less quota
         instance_count=1,
         description="Iris classification deployment"
     )
     
-    print(f"Creating deployment: {deployment_name}")
-    ml_client.online_deployments.begin_create_or_update(deployment).result()
+    print(f"Creating deployment: {deployment_name} (using Standard_DS1_v2 for quota efficiency)")
+    try:
+        ml_client.online_deployments.begin_create_or_update(deployment).result()
+    except Exception as deploy_error:
+        if "OutOfQuota" in str(deploy_error) or "Not enough quota" in str(deploy_error):
+            print("\n❌ Quota Limit Error!")
+            print("🔧 Options to resolve:")
+            print("   1. Request quota increase in Azure portal")
+            print("   2. Delete unused resources to free up quota") 
+            print("   3. Use an even smaller VM size (Standard_B1s)")
+            print("   4. Try a different region with more available quota")
+            print(f"\n📊 Current quota usage from error: {deploy_error}")
+            
+            # Try with smallest possible VM size
+            print("\n🔄 Attempting deployment with smallest VM size (Standard_B1s)...")
+            deployment.instance_type = "Standard_B1s"
+            try:
+                ml_client.online_deployments.begin_create_or_update(deployment).result()
+                print("✅ Deployment successful with Standard_B1s!")
+            except Exception as final_error:
+                raise Exception(f"Deployment failed even with smallest VM size. Please free up quota or request increase. Error: {final_error}")
+        else:
+            raise deploy_error
     
     # Set traffic to 100%
     endpoint.traffic = {deployment_name: 100}

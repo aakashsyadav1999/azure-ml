@@ -33,15 +33,17 @@ azure-ml-trial/
 ├── � data/                        # Datasets (auto-generated)
 │   ├── 📄 train.csv               # Training data
 │   └── 📄 test.csv                # Test data
-├── 📂 models/                      # Saved models
+├── 📂 models/                      # Saved models (local)
 │   ├── 📄 latest_model.joblib     # Latest trained model
 │   └── 📄 latest_metadata.json    # Model metadata
-├── 📂 deployment/                  # Deployment artifacts
-│   ├── 📄 score.py                # Scoring script (auto-generated)
-│   ├── 📄 conda-env.yml           # Inference environment
-│   └── 📄 deployment_info.json    # Endpoint information
-├── 📄 test_endpoint.py             # Endpoint testing script
-├── � requirements.txt             # Python dependencies
+├── 📂 outputs/                     # Training outputs (Azure ML)
+│   ├── 📄 latest_model.joblib     # Model saved by training job
+│   └── 📄 latest_metadata.json    # Training metrics and metadata
+├── 📂 deployment/                  # Deployment artifacts (optional)
+│   ├── 📄 score.py                # Scoring script (for manual deployment)
+│   └── 📄 conda-env.yml           # Inference environment
+├── 📄 test_endpoint.py             # Endpoint testing script (for manual use)
+├── 📄 requirements.txt             # Python dependencies
 ├── 📄 main.py                      # Entry point for demo
 ├── � README.md                    # This file
 └── 📄 DEPLOYMENT.md                # Deployment guide
@@ -172,6 +174,7 @@ Validation classification report:
 - Install Azure ML SDK and dependencies
 - Submit training job to Azure ML workspace
 - Monitor job execution
+- Register model automatically upon completion
 ```
 
 ### 3. Training Execution (Azure ML)
@@ -179,25 +182,56 @@ Validation classification report:
 - Create/use compute cluster (ml-training-cluster)
 - Set up conda environment with ML dependencies
 - Run train_model.py with Iris data
-- Save trained model and metadata
-- Register model in Azure ML Model Registry
-```
-
-### 4. Model Deployment (NEW!)
-```yaml
-- Create inference configuration with scoring script
-- Deploy model to Azure Container Instance (ACI)
-- Test endpoint with sample Iris predictions
-- Generate deployment info and monitoring links
+- Save trained model and metadata to outputs/
+- Model registration in Azure ML Model Registry
 ```
 
 ## 🚀 **Complete MLOps Pipeline**
 
 ### **🎯 What Happens When You Commit?**
 
-**Full MLOps Pipeline Triggered by `git push origin dev`:**
+**MLOps Training Pipeline Triggered by `git push origin dev`:**
 
 1. **🔥 Data Preparation**
+   - Generate Iris dataset from scikit-learn
+   - Split into training/test CSV files  
+   - Upload as GitHub Actions artifacts
+
+2. **⚙️ Azure ML Training**
+   - Authenticate with Azure service principal
+   - Submit training job to Azure ML workspace
+   - Use compute cluster for scalable training
+   - Train RandomForest classifier on Iris data
+
+3. **📦 Model Registration**
+   - Automatically register trained model in Azure ML Model Registry
+   - Include metadata: algorithm, framework, dataset tags
+   - Versioned model storage for tracking and governance
+
+### **🎉 End Result**
+
+✅ **Trained and Registered Model** ready for deployment
+- Model stored in Azure ML Model Registry
+- Versioned and tagged for easy management
+- Ready to deploy when you choose (manually or via separate pipeline)
+
+## 🛠️ **Manual Deployment** 
+
+Since deployment is handled separately, you can deploy your registered model using:
+
+```bash
+# Option 1: Use the deployment script (when ready)
+python src/deploy_model.py \
+  --model-name iris-classifier \
+  --endpoint-name my-iris-endpoint
+
+# Option 2: Azure CLI
+az ml online-endpoint create --name iris-endpoint --file endpoint.yml
+az ml online-deployment create --name iris-deployment --file deployment.yml
+
+# Option 3: Azure ML Studio UI
+# Navigate to Models → Select iris-classifier → Deploy
+```
    - Loads Iris dataset (150 samples, 4 features, 3 classes)
    - Creates stratified train/test splits
    - Uploads data as GitHub Actions artifacts
@@ -415,6 +449,39 @@ No artifacts matching latest_model.joblib found from Job
 - Verify training script saves to `outputs/` directory
 - Check training job completion status
 - Ensure model file path matches registration path
+
+#### 6. **Quota Limit Errors**
+
+**Error:**
+```
+Not enough quota available for Standard_DS2_v2. Current usage/limit: 4/6. Additional needed: 4
+```
+
+**Solution:**
+```bash
+# Check current quota usage
+az vm list-usage --location "East US" --output table
+
+# Request quota increase (requires support request)
+# Or free up resources:
+az ml online-endpoint list
+az ml online-endpoint delete --name unused-endpoint-name
+
+# The deployment script now automatically tries smaller VM sizes:
+# Standard_DS2_v2 → Standard_DS1_v2 → Standard_B1s
+```
+
+#### 7. **Endpoint State Issues**
+
+**Error:**
+```
+This endpoint has not been created successfully or is in deleting provisioning state
+```
+
+**Solution:**
+- Script now automatically detects and cleans up failed endpoints
+- Manually delete if needed: `az ml online-endpoint delete --name endpoint-name`
+- Wait for deletion to complete before recreating
 
 ### 💡 Need More Help?
 

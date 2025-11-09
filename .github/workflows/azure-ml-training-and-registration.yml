@@ -1,4 +1,4 @@
-name: Azure ML Automated Training Pipeline
+name: Azure ML Training & Model Registration Pipeline
 
 # Trigger on push to dev branch
 on:
@@ -106,49 +106,6 @@ jobs:
           --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
           --client-id ${{ secrets.AZURE_CLIENT_ID }} \
           --client-secret ${{ secrets.AZURE_CLIENT_SECRET }}
-          
-  deploy-model:
-    needs: azure-ml-training
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
-    
-    steps:
-    - uses: actions/checkout@v4
-        
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-    
-    - name: Install Azure ML SDK v2
-      run: |
-        pip install azure-ai-ml azure-identity
-        
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
-    
-    - name: Register Azure Resource Providers
-      run: |
-        echo "🔧 Registering required Azure resource providers..."
-        az provider register --namespace Microsoft.MachineLearningServices --wait
-        az provider register --namespace Microsoft.ContainerInstance --wait
-        az provider register --namespace Microsoft.ContainerRegistry --wait
-        az provider register --namespace Microsoft.KeyVault --wait
-        echo "✅ Resource providers registered successfully"
-    
-    - name: Deploy model to endpoint
-      run: |
-        python src/deploy_model.py \
-          --config config/azure-ml-config.yml \
-          --model-name iris-classifier \
-          --endpoint-name iris-classifier-endpoint \
-          --deployment-name iris-deployment \
-          --test-endpoint \
-          --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
-          --client-id ${{ secrets.AZURE_CLIENT_ID }} \
-          --client-secret ${{ secrets.AZURE_CLIENT_SECRET }}
 
   # Job 3: Post-training notification
   notify:
@@ -159,13 +116,15 @@ jobs:
     - name: Training Success Notification
       if: ${{ needs.azure-ml-training.result == 'success' }}
       run: |
-        echo "✅ Azure ML training job submitted successfully!"
-        echo "🔗 Check your Azure ML workspace for job progress"
+        echo "✅ Azure ML training and model registration completed successfully!"
+        echo "🔗 Check your Azure ML workspace for job progress and registered model"
         echo "📊 Training triggered by commit: ${{ github.sha }}"
+        echo "🎯 Model is now registered and ready for deployment"
     
     - name: Training Failure Notification
       if: ${{ needs.azure-ml-training.result == 'failure' }}
       run: |
         echo "❌ Azure ML training job submission failed!"
         echo "🔍 Please check the workflow logs for details"
+        echo "💡 Common issues: Azure credentials, workspace configuration"
         echo "💡 Common issues: Azure credentials, workspace configuration"
