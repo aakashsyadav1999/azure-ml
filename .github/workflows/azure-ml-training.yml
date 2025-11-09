@@ -25,11 +25,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
-      with:
-        version: "latest"
-    
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -37,20 +32,22 @@ jobs:
     
     - name: Install dependencies
       run: |
-        uv pip install -r requirements.txt
+        pip install -r requirements.txt
     
     - name: Generate Iris training data
       run: |
         mkdir -p data
-        uv run python src/generate_data.py --output-dir data --test-size 0.2
+        python src/generate_data.py --output-dir data --test-size 0.2
         echo "✅ Data generation completed"
         ls -la data/
         echo "📊 Data files ready for training"
+        echo "📁 Files to upload:"
+        find data/ -name "*.csv" -exec echo "  - {}" \;
     
     - name: Upload data artifact
       uses: actions/upload-artifact@v4
       with:
-        name: iris-training-data
+        name: training-data
         path: data/
         retention-days: 30
 
@@ -65,7 +62,7 @@ jobs:
     - name: Download data artifacts
       uses: actions/download-artifact@v4
       with:
-        name: iris-training-data
+        name: training-data
         path: data/
     
     - name: Verify data files
