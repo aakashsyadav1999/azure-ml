@@ -90,12 +90,12 @@ def submit_training_job(ws, compute_target, environment, config):
     experiment = Experiment(workspace=ws, name=exp_config['name'])
     
     script_config = ScriptRunConfig(
-        source_directory='src',
-        script='train_model.py',
+        source_directory='.',  # Upload entire project directory
+        script='src/train_model.py',
         arguments=[
-            '--data-path', '../data/train.csv',
+            '--data-path', './data/train.csv',  # Relative to project root
             '--model-type', 'random_forest',
-            '--output-dir', '../models'
+            '--output-dir', './models'
         ],
         compute_target=compute_target,
         environment=environment
