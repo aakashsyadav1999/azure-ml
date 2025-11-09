@@ -100,11 +100,17 @@ def submit_training_job(ml_client, compute, environment, config):
     exp_config = config['experiment']
     
     from azure.ai.ml import command
+    import datetime
     
     # Use the environment object directly instead of hardcoded version
     env_reference = f"{environment.name}:{environment.version}"
     
+    # Create descriptive job name with timestamp
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    job_name = f"iris-training-{timestamp}"
+    
     job = command(
+        name=job_name,  # Explicit job name instead of auto-generated
         code="./",  # Upload the entire project
         command="python src/train_model.py --data-path data/train.csv --output-dir outputs",
         environment=env_reference,  # Use dynamic environment version
@@ -114,7 +120,10 @@ def submit_training_job(ml_client, compute, environment, config):
         description="Train Iris classification model with scikit-learn and MLflow tracking"
     )
     
-    print(f"Submitting training job with environment: {env_reference}")
+    print(f"Submitting training job:")
+    print(f"  - Job Name: {job_name}")
+    print(f"  - Experiment: {exp_config['name']}")
+    print(f"  - Environment: {env_reference}")
     submitted_job = ml_client.jobs.create_or_update(job)
     print(f"Job submitted: {submitted_job.name}")
     
