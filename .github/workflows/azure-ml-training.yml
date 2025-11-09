@@ -37,12 +37,15 @@ jobs:
     
     - name: Install dependencies
       run: |
-        uv add -r requirements.txt
+        uv pip install -r requirements.txt
     
     - name: Generate Iris training data
       run: |
         mkdir -p data
         uv run python src/generate_data.py --output-dir data --test-size 0.2
+        echo "✅ Data generation completed"
+        ls -la data/
+        echo "📊 Data files ready for training"
     
     - name: Upload data artifact
       uses: actions/upload-artifact@v4
@@ -62,13 +65,21 @@ jobs:
     - name: Download data artifacts
       uses: actions/download-artifact@v4
       with:
-        name: training-data
+        name: iris-training-data
         path: data/
     
     - name: Verify data files
       run: |
-        echo "Checking data files..."
+        echo "✅ Checking downloaded data files..."
         ls -la data/
+        if [ -f "data/train.csv" ] && [ -f "data/test.csv" ]; then
+          echo "✅ Both train.csv and test.csv found!"
+          echo "📊 Training data rows: $(tail -n +2 data/train.csv | wc -l)"
+          echo "📊 Test data rows: $(tail -n +2 data/test.csv | wc -l)"
+        else
+          echo "❌ Missing data files!"
+          exit 1
+        fi
         
     - name: Set up Python
       uses: actions/setup-python@v5
