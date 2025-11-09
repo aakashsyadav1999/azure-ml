@@ -102,15 +102,15 @@ def submit_training_job(ml_client, compute, environment, config):
     """Submit training job using SDK v2"""
     exp_config = config['experiment']
     
-    from azure.ai.ml.entities import Command
+    from azure.ai.ml import command
     
-    job = Command(
-        experiment_name=exp_config['name'],
+    job = command(
+        code="./",  # Source directory
+        command="python src/train_model.py --data-path data/train.csv --output-dir outputs",
+        environment="iris-training-env:1",  # Environment name:version
+        compute="ml-training-cluster",  # Compute name
         display_name="Iris Classification Training",
-        code=".",  # Use current directory
-        command="python src/train_model.py",
-        environment=environment,
-        compute=compute.name,
+        experiment_name=exp_config['name'],
         description="Train Iris classification model with scikit-learn"
     )
     
@@ -128,10 +128,10 @@ def register_model_after_training(ml_client, job, model_name="iris-classifier"):
             from azure.ai.ml.entities import Model
             from azure.ai.ml.constants import AssetTypes
             
-            # Register model from the job
+            # Register model from the job outputs
             model = Model(
                 name=model_name,
-                path=f"azureml://jobs/{job.name}/outputs/artifacts/paths/models/latest_model.joblib",
+                path=f"azureml://jobs/{job.name}/outputs/artifacts/paths/latest_model.joblib",
                 description="Iris classification model trained with scikit-learn",
                 type=AssetTypes.CUSTOM_MODEL,
                 tags={
