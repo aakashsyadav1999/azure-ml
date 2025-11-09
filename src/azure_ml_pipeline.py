@@ -78,25 +78,21 @@ def get_environment(ml_client, config):
     env_config = config['environment']
     env_name = env_config['name']
     
-    try:
-        environment = ml_client.environments.get(env_name, version="1")
-        print(f"Environment '{env_name}' found.")
-        return environment
-    except Exception:
-        print(f"Creating new environment: {env_name}")
-        
-        from azure.ai.ml.entities import Environment
-        
-        environment = Environment(
-            name=env_name,
-            conda_file=env_config['conda_file'],
-            image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04:latest",
-            description="Iris classification training environment"
-        )
-        
-        ml_client.environments.create_or_update(environment)
-        print(f"Environment '{env_name}' created successfully.")
-        return environment
+    # Force recreation of environment to include MLflow
+    print(f"Creating new environment: {env_name}")
+    
+    from azure.ai.ml.entities import Environment
+    
+    environment = Environment(
+        name=env_name,
+        conda_file=env_config['conda_file'],
+        image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04:latest",
+        description="Iris classification training environment with MLflow tracking"
+    )
+    
+    created_env = ml_client.environments.create_or_update(environment)
+    print(f"Environment '{env_name}' created successfully with version: {created_env.version}")
+    return created_env
 
 
 def submit_training_job(ml_client, compute, environment, config):
@@ -105,17 +101,20 @@ def submit_training_job(ml_client, compute, environment, config):
     
     from azure.ai.ml import command
     
+    # Use the environment object directly instead of hardcoded version
+    env_reference = f"{environment.name}:{environment.version}"
+    
     job = command(
         code="./",  # Upload the entire project
         command="python src/train_model.py --data-path data/train.csv --output-dir outputs",
-        environment="iris-training-env:1",  # Environment name:version
+        environment=env_reference,  # Use dynamic environment version
         compute="ml-training-cluster",  # Compute name
-        display_name="Iris Classification Training",
+        display_name="Iris Classification Training with MLflow",
         experiment_name=exp_config['name'],
-        description="Train Iris classification model with scikit-learn"
+        description="Train Iris classification model with scikit-learn and MLflow tracking"
     )
     
-    print("Submitting training job...")
+    print(f"Submitting training job with environment: {env_reference}")
     submitted_job = ml_client.jobs.create_or_update(job)
     print(f"Job submitted: {submitted_job.name}")
     
