@@ -123,7 +123,11 @@ dependencies:
     - azure-ai-ml
 '''
     
-    conda_env_path = "deployment/conda-env.yml"
+    # Create deployment directory if it doesn't exist
+    deployment_dir = "deployment"
+    os.makedirs(deployment_dir, exist_ok=True)
+    
+    conda_env_path = os.path.join(deployment_dir, "conda-env.yml")
     with open(conda_env_path, 'w') as f:
         f.write(conda_env_content)
     
