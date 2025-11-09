@@ -1,9 +1,12 @@
 # Core ML libraries for local development and training
-pandas>=2.0.0
+pandas>=2.0.0,<2.3.0
 scikit-learn>=1.3.0
-numpy>=1.24.0
+numpy>=1.24.0,<2.0.0
 joblib>=1.3.0
 pyyaml>=6.0
+azureml-core>=1.55.0
+azureml-sdk>=1.55.0
+requests>=2.31.0
 
 # Azure ML SDK (for pipeline submission)
 # Note: These are installed separately in GitHub Actions due to dependency conflicts

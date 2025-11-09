@@ -16,44 +16,65 @@ This project demonstrates:
 - **CI/CD for ML**: Modern MLOps practices with GitHub Actions
 - **Iris Classification**: Classic ML problem with 95%+ accuracy results
 
-## 📁 Project Structure
+## 🏗️ **Project Structure**
 
 ```
-azure_ml_trial/
-├── 📄 README.md                         # This file
-├── 📦 requirements.txt                  # Python dependencies
-├── 📁 .github/workflows/
-│   └── azure-ml-training.yml           # GitHub Actions workflow
-├── 📁 config/
-│   ├── azure-ml-config.yml             # Azure ML workspace configuration
-│   └── conda-env.yml                   # Environment for Azure ML
-├── 📁 src/
-│   ├── generate_data.py                # Iris dataset loader
-│   ├── train_model.py                  # ML training script
-│   └── azure_ml_pipeline.py            # Azure ML job submission
-├── 📁 data/                            # Generated CSV files
-└── 📁 models/                          # Saved models and metadata
+azure-ml-trial/
+├── � src/                          # Source code
+│   ├── � generate_data.py         # Iris dataset generation
+│   ├── 📄 train_model.py           # Model training script  
+│   ├── � azure_ml_pipeline.py     # Azure ML job submission
+│   └── 📄 deploy_model.py          # Model deployment script
+├── � config/                      # Configuration files
+│   ├── 📄 azure-ml-config.yml      # Azure ML workspace config
+│   └── 📄 conda-env.yml            # Conda environment
+├── 📂 .github/workflows/           # CI/CD automation
+│   └── 📄 azure-ml-training.yml    # GitHub Actions workflow
+├── � data/                        # Datasets (auto-generated)
+│   ├── 📄 train.csv               # Training data
+│   └── 📄 test.csv                # Test data
+├── 📂 models/                      # Saved models
+│   ├── 📄 latest_model.joblib     # Latest trained model
+│   └── 📄 latest_metadata.json    # Model metadata
+├── 📂 deployment/                  # Deployment artifacts
+│   ├── 📄 score.py                # Scoring script (auto-generated)
+│   ├── 📄 conda-env.yml           # Inference environment
+│   └── 📄 deployment_info.json    # Endpoint information
+├── 📄 test_endpoint.py             # Endpoint testing script
+├── � requirements.txt             # Python dependencies
+├── 📄 main.py                      # Entry point for demo
+├── � README.md                    # This file
+└── 📄 DEPLOYMENT.md                # Deployment guide
 ```
 
 ## 🎮 Quick Start Demo
 
-### Option 1: Trigger Training (Automatic)
+### Option 1: Trigger Full Pipeline (Training + Deployment)
 ```bash
 # Make any change to trigger training
 echo "Demo update $(date)" >> README.md
 
 # Commit and push to dev branch
 git add .
-git commit -m "Trigger Azure ML training demo"
+git commit -m "Trigger Azure ML training and deployment"
 git push origin dev
 
-# 🎉 Watch GitHub Actions → Azure ML Studio for training!
+# 🎉 Watch GitHub Actions → Azure ML Studio for training and deployment!
 ```
 
 ### Option 2: Manual Workflow Trigger
 1. Go to [GitHub Actions](https://github.com/aakashsyadav1999/azure-ml/actions)
 2. Click "Azure ML Automated Training Pipeline"
 3. Click "Run workflow" → Select `dev` branch → "Run workflow"
+
+### Option 3: Test Deployed Endpoint
+```bash
+# Test your deployed model endpoint
+python test_endpoint.py --endpoint-url YOUR_SCORING_URI
+
+# Or check deployment_info.json for endpoint details
+cat deployment/deployment_info.json
+```
 
 ## 🛠️ Local Development
 
@@ -159,7 +180,43 @@ Validation classification report:
 - Set up conda environment with ML dependencies
 - Run train_model.py with Iris data
 - Save trained model and metadata
+- Register model in Azure ML Model Registry
 ```
+
+### 4. Model Deployment (NEW!)
+```yaml
+- Create inference configuration with scoring script
+- Deploy model to Azure Container Instance (ACI)
+- Test endpoint with sample Iris predictions
+- Generate deployment info and monitoring links
+```
+
+## 🚀 **Complete MLOps Pipeline**
+
+### **🎯 What Happens When You Commit?**
+
+**Full MLOps Pipeline Triggered by `git push origin dev`:**
+
+1. **🔥 Data Preparation**
+   - Loads Iris dataset (150 samples, 4 features, 3 classes)
+   - Creates stratified train/test splits
+   - Uploads data as GitHub Actions artifacts
+
+2. **🤖 Model Training on Azure ML**
+   - Submits job to Azure ML compute cluster
+   - Trains RandomForest classifier (95.8% accuracy achieved!)
+   - Saves model artifacts and metadata
+   - **🆕 Automatically registers model in Azure ML Model Registry**
+
+3. **🚀 Model Deployment (NEW!)**
+   - Creates inference configuration with scoring script
+   - Deploys model to Azure Container Instance (ACI) endpoint
+   - Tests endpoint with sample predictions
+   - Saves deployment info for monitoring
+
+4. **✅ Notification**
+   - Sends status notifications about training and deployment
+   - Provides links to Azure ML Studio and endpoint details
 
 ## 📊 Monitoring & Results
 
@@ -171,12 +228,34 @@ Validation classification report:
 ### Azure ML Studio
 - **Workspace URL**: [ml.azure.com](https://ml.azure.com/)
 - **Experiments**: `iris-classification` experiment
-- **Models**: Trained models with versioning
+- **Models**: Trained models with versioning and registry
+- **Endpoints**: Deployed web services for inference
 - **Compute**: Real-time compute cluster status
 
 ### Artifacts Generated
 - **Model File**: `latest_model.joblib` (RandomForest/LogisticRegression)
 - **Metadata**: `latest_metadata.json` (metrics, timestamps, config)
+- **Endpoint**: Live REST API for Iris species prediction
+- **Deployment Info**: `deployment/deployment_info.json` with scoring URI
+
+### Example Endpoint Usage
+```bash
+curl -X POST "YOUR_SCORING_URI" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data": [
+      [5.1, 3.5, 1.4, 0.2],
+      [6.0, 3.0, 4.8, 1.8]
+    ]
+  }'
+
+# Response:
+{
+  "predictions": [0, 2],
+  "probabilities": [[0.95, 0.03, 0.02], [0.01, 0.02, 0.97]],
+  "class_names": ["setosa", "versicolor", "virginica"]
+}
+```
 - **Versioned Files**: Timestamped model and metadata files
 
 ## 🐛 Troubleshooting

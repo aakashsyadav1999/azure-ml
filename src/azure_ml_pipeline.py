@@ -4,7 +4,7 @@ Azure ML pipeline script - submits training job to Azure ML
 import os
 import argparse
 import yaml
-from azureml.core import Workspace, Experiment, Environment, ScriptRunConfig
+from azureml.core import Workspace, Experiment, Environment, ScriptRunConfig, Model
 from azureml.core.compute import ComputeTarget, AmlCompute
 from azureml.core.compute_target import ComputeTargetException
 from azureml.core.authentication import ServicePrincipalAuthentication
@@ -107,6 +107,33 @@ def submit_training_job(ws, compute_target, environment, config):
     
     return run
 
+def register_model_after_training(ws, run, model_name="iris-classifier"):
+    """Register the trained model after successful training"""
+    if run.get_status() == 'Completed':
+        try:
+            # Register model from the run
+            model = run.register_model(
+                model_name=model_name,
+                model_path="outputs/latest_model.joblib",
+                description="Iris classification model trained with scikit-learn",
+                tags={
+                    "algorithm": "RandomForest",
+                    "framework": "scikit-learn", 
+                    "dataset": "iris",
+                    "accuracy": str(run.get_metrics().get("validation_accuracy", "unknown"))
+                },
+                model_framework="ScikitLearn"
+            )
+            print(f"Model registered: {model.name}, version: {model.version}")
+            return model
+        except Exception as e:
+            print(f"Failed to register model: {str(e)}")
+            return None
+    else:
+        print(f"Training run status: {run.get_status()}. Model not registered.")
+        return None
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config/azure-ml-config.yml')
@@ -114,6 +141,7 @@ def main():
     parser.add_argument('--tenant-id', help='Azure tenant ID')
     parser.add_argument('--service-principal-id', help='Service principal ID')
     parser.add_argument('--service-principal-password', help='Service principal password')
+    parser.add_argument('--register-model', action='store_true', help='Register model after training')
     
     args = parser.parse_args()
     
@@ -143,6 +171,10 @@ def main():
         print("Waiting for completion...")
         run.wait_for_completion(show_output=True)
         print(f"Training completed with status: {run.get_status()}")
+        
+        # Register model if requested
+        if args.register_model:
+            register_model_after_training(ws, run)
     else:
         print("Job submitted! Check Azure ML Studio for progress.")
 
