@@ -105,7 +105,7 @@ def submit_training_job(ml_client, compute, environment, config):
     from azure.ai.ml import command
     
     job = command(
-        code="./",  # Source directory
+        code="./",  # Upload the entire project
         command="python src/train_model.py --data-path data/train.csv --output-dir outputs",
         environment="iris-training-env:1",  # Environment name:version
         compute="ml-training-cluster",  # Compute name
