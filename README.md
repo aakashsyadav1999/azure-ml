@@ -339,6 +339,90 @@ compute:
 - [MLOps with Azure ML](https://docs.microsoft.com/azure/machine-learning/concept-model-management-and-deployment)
 - [Iris Dataset Background](https://en.wikipedia.org/wiki/Iris_flower_data_set)
 
+## 🔧 Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. **Resource Provider Not Registered Error**
+
+**Error:**
+```
+SubscriptionNotRegistered: Resource provider [N/A] isn't registered with Subscription [N/A]
+```
+
+**Solution:**
+```bash
+# Run the automated registration script
+./scripts/register-azure-providers.sh
+
+# Or manually register required providers:
+az provider register --namespace Microsoft.MachineLearningServices
+az provider register --namespace Microsoft.ContainerInstance
+az provider register --namespace Microsoft.ContainerRegistry
+az provider register --namespace Microsoft.KeyVault
+
+# Check registration status
+az provider show --namespace Microsoft.MachineLearningServices --query registrationState
+```
+
+#### 2. **Authentication Failures**
+
+**Error:**
+```
+DefaultAzureCredential failed to retrieve a token
+```
+
+**Solution:**
+- Verify GitHub secrets are set correctly:
+  - `AZURE_TENANT_ID`
+  - `AZURE_CLIENT_ID` 
+  - `AZURE_CLIENT_SECRET`
+  - `AZURE_SUBSCRIPTION_ID`
+- Ensure service principal has required permissions
+
+#### 3. **Compute Cluster Issues**
+
+**Error:**
+```
+ComputeTargetException: The compute target does not exist
+```
+
+**Solution:**
+- Check Azure ML workspace has available quota
+- Verify compute cluster name in `config/azure-ml-config.yml`
+- Ensure service principal has ML workspace contributor access
+
+#### 4. **Environment Creation Failures**
+
+**Error:**
+```
+Environment creation failed
+```
+
+**Solution:**
+- Check conda environment file syntax in `config/conda-env.yml`
+- Verify all package versions are compatible
+- Try reducing environment complexity for testing
+
+#### 5. **Model Registration Issues**
+
+**Error:**
+```
+No artifacts matching latest_model.joblib found from Job
+```
+
+**Solution:**
+- Verify training script saves to `outputs/` directory
+- Check training job completion status
+- Ensure model file path matches registration path
+
+### 💡 Need More Help?
+
+- **📖 Check logs**: GitHub Actions → Your workflow → Job details
+- **🔍 Azure ML Studio**: Monitor training jobs and endpoints
+- **📞 Azure Support**: For subscription-level issues
+- **💬 GitHub Issues**: Report bugs or request features
+
 ## 🤝 Contributing
 
 This is a demo project, but improvements are welcome:

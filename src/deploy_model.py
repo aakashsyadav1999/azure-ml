@@ -164,15 +164,30 @@ def deploy_model(ml_client, model, environment, endpoint_name="iris-classifier-e
     try:
         endpoint = ml_client.online_endpoints.get(endpoint_name)
         print(f"Using existing endpoint: {endpoint_name}")
-    except:
+    except Exception as get_error:
         print(f"Creating new endpoint: {endpoint_name}")
         endpoint = ManagedOnlineEndpoint(
             name=endpoint_name,
             description="Iris species classification endpoint",
             tags={"model": "iris-classifier", "method": "sklearn"}
         )
-        ml_client.online_endpoints.begin_create_or_update(endpoint).result()
-        endpoint = ml_client.online_endpoints.get(endpoint_name)
+        try:
+            ml_client.online_endpoints.begin_create_or_update(endpoint).result()
+            endpoint = ml_client.online_endpoints.get(endpoint_name)
+        except Exception as create_error:
+            if "SubscriptionNotRegistered" in str(create_error):
+                print("\n❌ Resource Provider Registration Error!")
+                print("🔧 To fix this issue, run the following Azure CLI commands:")
+                print("   az provider register --namespace Microsoft.MachineLearningServices")
+                print("   az provider register --namespace Microsoft.ContainerInstance")
+                print("   az provider register --namespace Microsoft.ContainerRegistry")
+                print("   az provider register --namespace Microsoft.KeyVault")
+                print("\n⏳ After registration, wait a few minutes for the providers to be ready.")
+                print("   You can check status with: az provider show --namespace Microsoft.MachineLearningServices")
+                print("\n💡 Note: You need subscription-level permissions to register resource providers.")
+                raise Exception(f"Resource providers not registered. Please register the required providers and try again. Original error: {create_error}")
+            else:
+                raise create_error
     
     # Create deployment
     deployment = ManagedOnlineDeployment(
