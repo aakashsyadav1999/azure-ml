@@ -1,32 +1,32 @@
 """
-Model deployment script for Azure ML
+Model deployment script for Azure ML using SDK v2
 Deploys trained model as a web service endpoint
 """
 
 import os
 import argparse
 import yaml
-import joblib
 import json
-from azureml.core import Workspace, Model, Environment
-from azureml.core.model import InferenceConfig
-from azureml.core.webservice import AciWebservice
-from azureml.core.authentication import ServicePrincipalAuthentication
+from azure.ai.ml import MLClient
+from azure.ai.ml.entities import (
+    ManagedOnlineEndpoint, ManagedOnlineDeployment, Model, Environment, CodeConfiguration
+)
+from azure.identity import DefaultAzureCredential, ClientSecretCredential
 
 
-def authenticate_azure_ml(tenant_id=None, service_principal_id=None, service_principal_password=None):
-    """Authenticate with Azure ML"""
-    if all([tenant_id, service_principal_id, service_principal_password]):
+def authenticate_azure_ml(tenant_id=None, client_id=None, client_secret=None):
+    """Authenticate with Azure ML using SDK v2"""
+    if all([tenant_id, client_id, client_secret]):
         print("Authenticating with Service Principal...")
-        auth = ServicePrincipalAuthentication(
+        credential = ClientSecretCredential(
             tenant_id=tenant_id,
-            service_principal_id=service_principal_id,
-            service_principal_password=service_principal_password
+            client_id=client_id,
+            client_secret=client_secret
         )
-        return auth
+        return credential
     else:
         print("Using default authentication...")
-        return None
+        return DefaultAzureCredential()
 
 
 def load_config(config_path):
@@ -36,45 +36,46 @@ def load_config(config_path):
     return config
 
 
-def get_workspace(config, auth=None):
-    """Connect to Azure ML workspace"""
+def get_ml_client(config, credential):
+    """Get Azure ML Client"""
     ws_config = config['workspace']
     
-    ws = Workspace.get(
-        name=ws_config['name'],
+    ml_client = MLClient(
+        credential=credential,
         subscription_id=ws_config['subscription_id'],
-        resource_group=ws_config['resource_group'],
-        auth=auth
+        resource_group_name=ws_config['resource_group'],
+        workspace_name=ws_config['name']
     )
     
-    print(f"Connected to workspace: {ws.name}")
-    return ws
+    print(f"Connected to workspace: {ws_config['name']}")
+    return ml_client
 
 
-def get_latest_model(ws, model_name="iris-classifier"):
+def get_latest_model(ml_client, model_name="iris-classifier"):
     """Get the latest version of the model"""
     try:
-        model = Model(ws, model_name)
-        print(f"Found model: {model.name}, version: {model.version}")
-        return model
+        models = ml_client.models.list(name=model_name)
+        latest_model = max(models, key=lambda x: int(x.version))
+        print(f"Found model: {latest_model.name}, version: {latest_model.version}")
+        return latest_model
     except Exception as e:
         print(f"Model not found: {e}")
         return None
 
 
-def create_inference_config():
-    """Create inference configuration"""
-    # Create scoring script content
+def create_scoring_script():
+    """Create scoring script for inference"""
     scoring_script_content = '''
 import json
 import joblib
 import numpy as np
-from azureml.core.model import Model
+import os
 
 def init():
     global model
-    model_path = Model.get_model_path("iris-classifier")
+    model_path = os.path.join(os.getenv("AZUREML_MODEL_DIR"), "latest_model.joblib")
     model = joblib.load(model_path)
+    print("Model loaded successfully")
 
 def run(raw_data):
     try:
@@ -103,7 +104,11 @@ def run(raw_data):
     with open(scoring_script_path, 'w') as f:
         f.write(scoring_script_content)
     
-    # Create environment file
+    return scoring_script_path
+
+
+def create_deployment_environment(ml_client):
+    """Create environment for deployment"""
     conda_env_content = '''
 name: iris-inference
 channels:
@@ -115,63 +120,82 @@ dependencies:
     - scikit-learn>=1.3.0
     - numpy>=1.24.0,<2.0.0
     - joblib>=1.3.0
-    - azureml-defaults
+    - azure-ai-ml
 '''
     
     conda_env_path = "deployment/conda-env.yml"
     with open(conda_env_path, 'w') as f:
         f.write(conda_env_content)
     
-    # Create inference config
-    inference_config = InferenceConfig(
-        entry_script=scoring_script_path,
-        environment=Environment.from_conda_specification(
-            name="iris-inference-env",
-            file_path=conda_env_path
-        )
+    # Create environment
+    environment = Environment(
+        name="iris-inference-env",
+        conda_file=conda_env_path,
+        image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04:latest",
+        description="Iris classification inference environment"
     )
     
-    return inference_config
-
-
-def deploy_model(ws, model, inference_config, service_name="iris-classifier-service"):
-    """Deploy model as web service"""
-    
-    # Check if service already exists
     try:
-        existing_service = ws.webservices[service_name]
-        print(f"Updating existing service: {service_name}")
-        existing_service.update(model=[model], inference_config=inference_config)
-        existing_service.wait_for_deployment(show_output=True)
-        return existing_service
-    except KeyError:
-        print(f"Creating new service: {service_name}")
-        pass
-    
-    # Create deployment configuration
-    deployment_config = AciWebservice.deploy_configuration(
-        cpu_cores=1,
-        memory_gb=1,
-        description="Iris species classification endpoint",
-        tags={"model": "iris-classifier", "method": "sklearn"},
-        enable_app_insights=True
-    )
-    
-    # Deploy model
-    service = Model.deploy(
-        ws,
-        service_name,
-        [model],
-        inference_config,
-        deployment_config
-    )
-    
-    service.wait_for_deployment(show_output=True)
-    
-    return service
+        env = ml_client.environments.create_or_update(environment)
+        print(f"Environment created: {env.name}")
+        return env
+    except Exception as e:
+        print(f"Error creating environment: {e}")
+        # Try to get existing environment
+        try:
+            env = ml_client.environments.get("iris-inference-env", version="1")
+            print(f"Using existing environment: {env.name}")
+            return env
+        except:
+            raise e
 
 
-def test_endpoint(service):
+def deploy_model(ml_client, model, environment, endpoint_name="iris-classifier-endpoint", deployment_name="iris-deployment"):
+    """Deploy model as managed online endpoint"""
+    
+    # Create scoring script
+    scoring_script_path = create_scoring_script()
+    
+    # Check if endpoint exists
+    try:
+        endpoint = ml_client.online_endpoints.get(endpoint_name)
+        print(f"Using existing endpoint: {endpoint_name}")
+    except:
+        print(f"Creating new endpoint: {endpoint_name}")
+        endpoint = ManagedOnlineEndpoint(
+            name=endpoint_name,
+            description="Iris species classification endpoint",
+            tags={"model": "iris-classifier", "method": "sklearn"}
+        )
+        ml_client.online_endpoints.begin_create_or_update(endpoint).result()
+        endpoint = ml_client.online_endpoints.get(endpoint_name)
+    
+    # Create deployment
+    deployment = ManagedOnlineDeployment(
+        name=deployment_name,
+        endpoint_name=endpoint_name,
+        model=model,
+        environment=environment,
+        code_configuration=CodeConfiguration(
+            code="deployment",
+            scoring_script="score.py"
+        ),
+        instance_type="Standard_DS2_v2",
+        instance_count=1,
+        description="Iris classification deployment"
+    )
+    
+    print(f"Creating deployment: {deployment_name}")
+    ml_client.online_deployments.begin_create_or_update(deployment).result()
+    
+    # Set traffic to 100%
+    endpoint.traffic = {deployment_name: 100}
+    ml_client.online_endpoints.begin_create_or_update(endpoint).result()
+    
+    return endpoint, deployment
+
+
+def test_endpoint(ml_client, endpoint_name):
     """Test the deployed endpoint"""
     # Sample Iris data for testing
     test_data = {
@@ -183,20 +207,28 @@ def test_endpoint(service):
     }
     
     print("Testing endpoint with sample data...")
-    result = service.run(json.dumps(test_data))
-    print(f"Test result: {result}")
-    
-    return result
+    try:
+        result = ml_client.online_endpoints.invoke(
+            endpoint_name=endpoint_name,
+            request_file=None,
+            request_json=test_data
+        )
+        print(f"Test result: {result}")
+        return result
+    except Exception as e:
+        print(f"Test failed: {e}")
+        return None
 
 
 def main():
     parser = argparse.ArgumentParser(description='Deploy Iris model to Azure ML')
     parser.add_argument('--config', default='config/azure-ml-config.yml')
     parser.add_argument('--model-name', default='iris-classifier')
-    parser.add_argument('--service-name', default='iris-classifier-service')
+    parser.add_argument('--endpoint-name', default='iris-classifier-endpoint')
+    parser.add_argument('--deployment-name', default='iris-deployment')
     parser.add_argument('--tenant-id', help='Azure tenant ID')
-    parser.add_argument('--service-principal-id', help='Service principal ID')
-    parser.add_argument('--service-principal-password', help='Service principal password')
+    parser.add_argument('--client-id', help='Service principal client ID')
+    parser.add_argument('--client-secret', help='Service principal client secret')
     parser.add_argument('--test-endpoint', action='store_true', help='Test the endpoint after deployment')
     
     args = parser.parse_args()
@@ -206,40 +238,43 @@ def main():
         config = load_config(args.config)
         
         # Authenticate
-        auth = authenticate_azure_ml(
+        credential = authenticate_azure_ml(
             args.tenant_id,
-            args.service_principal_id,
-            args.service_principal_password
+            args.client_id,
+            args.client_secret
         )
         
-        # Get workspace
-        ws = get_workspace(config, auth)
+        # Get ML client
+        ml_client = get_ml_client(config, credential)
         
         # Get latest model
-        model = get_latest_model(ws, args.model_name)
+        model = get_latest_model(ml_client, args.model_name)
         if model is None:
             print("No trained model found. Please train a model first.")
             return
         
-        # Create inference configuration
-        inference_config = create_inference_config()
+        # Create environment
+        environment = create_deployment_environment(ml_client)
         
         # Deploy model
-        service = deploy_model(ws, model, inference_config, args.service_name)
+        endpoint, deployment = deploy_model(
+            ml_client, model, environment, args.endpoint_name, args.deployment_name
+        )
         
         print(f"Model deployed successfully!")
-        print(f"Service name: {service.name}")
-        print(f"Scoring URI: {service.scoring_uri}")
+        print(f"Endpoint name: {endpoint.name}")
+        print(f"Scoring URI: {endpoint.scoring_uri}")
         
         if args.test_endpoint:
-            test_endpoint(service)
+            test_endpoint(ml_client, args.endpoint_name)
         
         # Save deployment info
         deployment_info = {
-            "service_name": service.name,
-            "scoring_uri": service.scoring_uri,
-            "state": service.state,
-            "deployed_at": service.created_time.isoformat() if service.created_time else None
+            "endpoint_name": endpoint.name,
+            "scoring_uri": endpoint.scoring_uri,
+            "deployment_name": args.deployment_name,
+            "model_name": model.name,
+            "model_version": model.version
         }
         
         os.makedirs("deployment", exist_ok=True)

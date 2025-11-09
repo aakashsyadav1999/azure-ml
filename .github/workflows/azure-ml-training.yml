@@ -75,9 +75,9 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Install Azure ML SDK
+    - name: Install Azure ML SDK v2
       run: |
-        pip install azureml-core azureml-sdk
+        pip install azure-ai-ml azure-identity
         
     - name: Azure Login
       uses: azure/login@v1
@@ -91,8 +91,8 @@ jobs:
           --wait-for-completion \
           --register-model \
           --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
-          --service-principal-id ${{ secrets.AZURE_CLIENT_ID }} \
-          --service-principal-password ${{ secrets.AZURE_CLIENT_SECRET }}
+          --client-id ${{ secrets.AZURE_CLIENT_ID }} \
+          --client-secret ${{ secrets.AZURE_CLIENT_SECRET }}
           
   deploy-model:
     needs: azure-ml-training
@@ -107,9 +107,9 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Install Azure ML SDK
+    - name: Install Azure ML SDK v2
       run: |
-        pip install azureml-core azureml-sdk
+        pip install azure-ai-ml azure-identity
         
     - name: Azure Login
       uses: azure/login@v1
@@ -121,11 +121,12 @@ jobs:
         python src/deploy_model.py \
           --config config/azure-ml-config.yml \
           --model-name iris-classifier \
-          --service-name iris-classifier-service \
+          --endpoint-name iris-classifier-endpoint \
+          --deployment-name iris-deployment \
           --test-endpoint \
           --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
-          --service-principal-id ${{ secrets.AZURE_CLIENT_ID }} \
-          --service-principal-password ${{ secrets.AZURE_CLIENT_SECRET }}
+          --client-id ${{ secrets.AZURE_CLIENT_ID }} \
+          --client-secret ${{ secrets.AZURE_CLIENT_SECRET }}
 
   # Job 3: Post-training notification
   notify:
