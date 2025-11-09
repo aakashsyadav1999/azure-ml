@@ -1,5 +1,5 @@
 """
-ML model training script for Iris classification
+ML model training script for Iris classification with Azure ML logging
 """
 import pandas as pd
 import numpy as np
@@ -12,6 +12,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 from sklearn.model_selection import train_test_split
 import joblib
+import mlflow
 
 def load_data(data_path):
     """Load training data from CSV"""
@@ -26,7 +27,7 @@ def load_data(data_path):
     return X, y, feature_cols
 
 def train_model(X, y, model_type='random_forest', random_state=42):
-    """Train classification model"""
+    """Train classification model and log metrics to Azure ML"""
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=0.2, random_state=random_state, stratify=y
     )
@@ -37,6 +38,14 @@ def train_model(X, y, model_type='random_forest', random_state=42):
         model = LogisticRegression(max_iter=200, random_state=random_state)
     else:
         raise ValueError(f"Unsupported model: {model_type}")
+    
+    # Log model hyperparameters
+    mlflow.log_param("model_type", model_type)
+    mlflow.log_param("random_state", random_state)
+    if model_type == 'random_forest':
+        mlflow.log_param("n_estimators", 100)
+    elif model_type == 'logistic_regression':
+        mlflow.log_param("max_iter", 200)
     
     model.fit(X_train, y_train)
     
@@ -54,9 +63,26 @@ def train_model(X, y, model_type='random_forest', random_state=42):
         'val_samples': len(X_val)
     }
     
+    # Log metrics to Azure ML
+    mlflow.log_metric("train_accuracy", metrics['train_accuracy'])
+    mlflow.log_metric("train_f1_macro", metrics['train_f1_macro'])
+    mlflow.log_metric("val_accuracy", metrics['val_accuracy'])
+    mlflow.log_metric("val_f1_macro", metrics['val_f1_macro'])
+    mlflow.log_metric("train_samples", metrics['train_samples'])
+    mlflow.log_metric("val_samples", metrics['val_samples'])
+    
     print(f"Training Accuracy: {metrics['train_accuracy']:.4f}")
     print(f"Validation Accuracy: {metrics['val_accuracy']:.4f}")
     print(f"Validation F1: {metrics['val_f1_macro']:.4f}")
+    
+    # Log classification report as artifact
+    report = classification_report(y_val, y_val_pred)
+    print(f"\nValidation classification report:\n{report}")
+    
+    # Save classification report as artifact
+    with open("outputs/classification_report.txt", "w") as f:
+        f.write(report)
+    mlflow.log_artifact("outputs/classification_report.txt")
     
     return model, metrics
 
@@ -108,16 +134,34 @@ def main():
     
     print(f"Training {args.model_type} model...")
     
-    # Load data
-    X, y, feature_cols = load_data(args.data_path)
+    # Start MLflow tracking for Azure ML
+    mlflow.start_run()
     
-    # Train model
-    model, metrics = train_model(X, y, args.model_type, args.random_state)
-    
-    # Save model
-    save_model(model, metrics, feature_cols, args.output_dir)
-    
-    print(f"Training complete! Validation accuracy: {metrics['val_accuracy']:.4f}")
+    try:
+        # Load data
+        X, y, feature_cols = load_data(args.data_path)
+        
+        # Log data info
+        mlflow.log_param("dataset", "iris")
+        mlflow.log_param("features", len(feature_cols))
+        mlflow.log_param("samples", len(X))
+        mlflow.log_param("output_dir", args.output_dir)
+        
+        # Train model
+        model, metrics = train_model(X, y, args.model_type, args.random_state)
+        
+        # Save model
+        model_path, metadata_path = save_model(model, metrics, feature_cols, args.output_dir)
+        
+        # Log model as MLflow artifact
+        mlflow.log_artifact(model_path.replace("outputs/", ""))
+        mlflow.log_artifact(metadata_path.replace("outputs/", ""))
+        
+        print(f"Training complete! Validation accuracy: {metrics['val_accuracy']:.4f}")
+        
+    finally:
+        # End MLflow tracking
+        mlflow.end_run()
 
 if __name__ == "__main__":
     main()
