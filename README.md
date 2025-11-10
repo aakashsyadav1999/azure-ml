@@ -40,6 +40,22 @@ azure_ml_trial/
 
 ### 1. Setup Azure Integration
 
+⚠️ **IMPORTANT**: Before running any workflows, configure GitHub repository secrets:
+
+1. **Navigate to Repository Settings**:
+   - Go to `https://github.com/your-username/azure-ml/settings/secrets/actions`
+
+2. **Configure Required Secrets** (see `docs/GITHUB_SECRETS_SETUP.md` for details):
+   ```
+   AZURE_WORKSPACE_NAME = "iris-data"
+   AZURE_RESOURCE_GROUP = "aakash-trial"  
+   AZURE_SUBSCRIPTION_ID = "your-subscription-id"
+   AZURE_CLIENT_ID = "your-service-principal-client-id"
+   AZURE_TENANT_ID = "your-tenant-id"
+   ```
+
+3. **Clone and Setup**:
+
 ```bash
 # Clone the repository
 git clone <your-repo-url>
