@@ -49,8 +49,8 @@ done
 echo ""
 
 # Ask user to select workspace or provide default
-read -p "Enter workspace name (or press Enter for 'iris-dataset'): " USER_WORKSPACE
-WORKSPACE_NAME=${USER_WORKSPACE:-iris-dataset}
+read -p "Enter workspace name (or press Enter for 'iris-data'): " USER_WORKSPACE
+WORKSPACE_NAME=${USER_WORKSPACE:-iris-data}
 
 echo "🎯 Using workspace: $WORKSPACE_NAME"
 echo ""
