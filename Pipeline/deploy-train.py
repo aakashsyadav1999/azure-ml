@@ -130,7 +130,7 @@ def create_training_job(ml_client, compute_name, environment, model_name, experi
             "model_name": model_name
         },
         code="./Pipeline/scripts",
-        command="python train_model.py --model-name ${{inputs.model_name}}",
+        command="python train_model.py --model_name ${{inputs.model_name}}",
         environment=environment,
         compute=compute_name,
         experiment_name=experiment_name,
