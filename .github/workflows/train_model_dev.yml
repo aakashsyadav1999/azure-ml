@@ -1,0 +1,86 @@
+name: "DEV - Train Model"
+
+# Trigger on dev branch pushes
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'Pipeline/**'
+      - 'environments/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: 'Model name for registration'
+        required: false
+        default: 'iris-classifier'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.9'
+
+jobs:
+  train-model-dev:
+    runs-on: ubuntu-latest
+    environment: Development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        pip install azure-ai-ml azure-identity azure-cli
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    
+    - name: Create Azure ML config
+      run: |
+        mkdir -p .azureml
+        cat > .azureml/config.json << EOF
+        {
+          "subscription_id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+          "resource_group": "${{ secrets.AZURE_RESOURCE_GROUP }}",
+          "workspace_name": "${{ secrets.AZURE_WORKSPACE_NAME }}"
+        }
+        EOF
+    
+    - name: Submit training pipeline to Azure ML
+      run: |
+        python Pipeline/deploy-train.py \
+          --model-name "${{ github.event.inputs.model_name || 'iris-classifier' }}" \
+          --experiment-name "iris-classification-dev" \
+          --environment "Development"
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        AZURE_WORKSPACE_NAME: ${{ secrets.AZURE_WORKSPACE_NAME }}
+    
+    - name: Training Success Notification
+      if: success()
+      run: |
+        echo "✅ DEV training pipeline completed successfully!"
+        echo "🔗 Check Azure ML Studio for job details"
+        echo "📊 Commit: ${{ github.sha }}"
+        echo "🎯 Model: ${{ github.event.inputs.model_name || 'iris-classifier' }}"
+    
+    - name: Training Failure Notification
+      if: failure()
+      run: |
+        echo "❌ DEV training pipeline failed!"
+        echo "🔍 Please check the workflow logs for details"
+        echo "💡 Common issues: Azure credentials, workspace configuration"

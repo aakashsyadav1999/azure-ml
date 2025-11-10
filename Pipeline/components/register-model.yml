@@ -1,0 +1,32 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: iris_register_model
+display_name: Iris Model Registration
+description: Register trained model to Azure ML Model Registry
+
+inputs:
+  input_model_dir:
+    type: uri_folder
+    description: "Directory containing trained models"
+  input_metrics_dir:
+    type: uri_folder
+    description: "Directory containing model metrics"
+  model_name:
+    type: string
+    default: "iris-classifier"
+    description: "Model name for registration"
+  model_description:
+    type: string
+    default: "Iris classification model trained with multiple algorithms"
+    description: "Model description"
+
+code: ../scripts
+environment: azureml://registries/azureml/environments/sklearn-1.0/versions/1
+
+command: >-
+  python register_model.py
+  --input_model_dir ${{inputs.input_model_dir}}
+  --input_metrics_dir ${{inputs.input_metrics_dir}}
+  --model_name ${{inputs.model_name}}
+  --model_description "${{inputs.model_description}}"

@@ -1,0 +1,20 @@
+# Environment-specific configuration for Development
+environment: Development
+azure_ml:
+  experiment_suffix: "-dev"
+  compute:
+    min_instances: 0
+    max_instances: 2
+    vm_size: "Standard_DS3_v2"
+  
+model:
+  registration:
+    auto_approve: false
+    tags:
+      environment: "development"
+      auto_deploy: false
+
+pipeline:
+  settings:
+    force_rerun: true
+    continue_on_step_failure: false

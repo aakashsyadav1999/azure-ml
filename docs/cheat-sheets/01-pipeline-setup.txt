@@ -1,0 +1,147 @@
+Azure ML Pipeline Setup and Configuration
+==========================================
+
+This cheat sheet covers the essential steps for setting up and configuring Azure ML pipelines with GitHub integration.
+
+1. AZURE SETUP
+--------------
+a. Create Azure ML Workspace
+   i. Portal → Create Resource → Machine Learning
+   ii. Configure: Subscription, Resource Group, Workspace Name, Region
+   iii. Advanced: Storage account, Key vault, Application insights
+
+b. Create Compute Cluster
+   i. Azure ML Studio → Compute → Compute clusters
+   ii. Click "New" → Configure VM size (Standard_DS3_v2 recommended)
+   iii. Set min instances: 0, max instances: 2-4
+   iv. Name: ml-training-cluster
+
+c. Verify Permissions
+   i. Your account needs Contributor role on the workspace
+   ii. For service principal: assign specific ML permissions
+
+2. GITHUB INTEGRATION SETUP
+---------------------------
+a. Run setup script (PowerShell):
+   i. Navigate to setup/ folder
+   ii. Edit variables in setup-github-integration.ps1
+   iii. Run: ./setup-github-integration.ps1
+   iv. Copy the output secrets
+
+b. Configure GitHub Secrets:
+   i. GitHub repo → Settings → Secrets and variables → Actions
+   ii. Add secrets:
+      - AZURE_CLIENT_ID
+      - AZURE_TENANT_ID  
+      - AZURE_SUBSCRIPTION_ID
+      - AZURE_RESOURCE_GROUP
+      - AZURE_WORKSPACE_NAME
+
+c. Create GitHub Environments:
+   i. Settings → Environments
+   ii. Create "Development" and "Production"
+   iii. Add the same secrets to each environment
+
+3. LOCAL DEVELOPMENT SETUP
+--------------------------
+a. Install Prerequisites:
+   i. Azure CLI: https://docs.microsoft.com/cli/azure/install-azure-cli
+   ii. Python 3.9+
+   iii. Git
+
+b. Clone and Setup:
+   i. git clone <repo-url>
+   ii. cd azure_ml_trial
+   iii. conda env create -f environments/iris-training-env.yml
+   iv. conda activate iris-training-env
+
+c. Configure Azure ML:
+   i. az login
+   ii. mkdir -p .azureml
+   iii. cp setup/config.json.template .azureml/config.json
+   iv. Edit .azureml/config.json with your values
+
+4. PIPELINE COMPONENTS OVERVIEW
+------------------------------
+a. Data Preparation (data_preparation.py):
+   - Loads Iris dataset
+   - Splits into train/test sets
+   - Saves CSV files
+
+b. Feature Engineering (feature_engineering.py):
+   - Creates interaction features (ratios, areas)
+   - Adds categorical size features
+   - Preprocesses data for training
+
+c. Model Training (train_model.py):
+   - Trains multiple models (RF, LR, SVM)
+   - Uses MLflow for tracking
+   - Selects best model
+   - Saves model and metrics
+
+d. Model Registration (register_model.py):
+   - Registers model to Azure ML
+   - Creates versioning
+   - Adds metadata tags
+
+5. RUNNING PIPELINES
+-------------------
+a. Local Testing:
+   i. Test individual components:
+      python Pipeline/scripts/data_preparation.py --help
+   ii. Run full pipeline:
+      python Pipeline/deploy-train.py --model-name test-model
+
+b. GitHub Actions:
+   i. Push to dev branch → triggers development pipeline
+   ii. Push to main/master → triggers production pipeline
+   iii. Manual trigger: Actions tab → Select workflow → Run workflow
+
+c. Monitor Progress:
+   i. GitHub Actions logs
+   ii. Azure ML Studio → Jobs → Experiments
+   iii. MLflow UI in Azure ML
+
+6. TROUBLESHOOTING
+-----------------
+a. Authentication Issues:
+   - Check az login status
+   - Verify service principal permissions
+   - Check GitHub secrets configuration
+
+b. Compute Issues:
+   - Verify compute cluster exists
+   - Check quota limits
+   - Ensure correct VM size
+
+c. Environment Issues:
+   - Check conda environment definition
+   - Verify package versions
+   - Test locally first
+
+d. Pipeline Failures:
+   - Check Azure ML job logs
+   - Verify component YAML syntax
+   - Test components individually
+
+7. BEST PRACTICES
+----------------
+a. Version Control:
+   - Use semantic versioning for models
+   - Tag releases for production deployments
+   - Document changes in pull requests
+
+b. Environment Management:
+   - Keep dev/prod configurations separate
+   - Use environment-specific settings
+   - Test in dev before promoting to prod
+
+c. Security:
+   - Rotate secrets regularly
+   - Use least privilege principles
+   - Monitor access logs
+
+d. Monitoring:
+   - Set up alerts for failed pipelines
+   - Monitor model performance
+   - Track resource usage and costs

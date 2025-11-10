@@ -1,0 +1,37 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: iris_train_model
+display_name: Iris Model Training
+description: Train and compare multiple models for Iris classification
+
+inputs:
+  input_train_data:
+    type: uri_folder
+    description: "Processed training dataset"
+  input_test_data:
+    type: uri_folder
+    description: "Processed test dataset"
+  model_name:
+    type: string
+    default: "iris-classifier"
+    description: "Model name for MLflow tracking"
+
+outputs:
+  output_model_dir:
+    type: uri_folder
+    description: "Trained models output directory"
+  output_metrics_dir:
+    type: uri_folder
+    description: "Model metrics and metadata output directory"
+
+code: ../scripts
+environment: azureml://registries/azureml/environments/sklearn-1.0/versions/1
+
+command: >-
+  python train_model.py
+  --input_train_data ${{inputs.input_train_data}}
+  --input_test_data ${{inputs.input_test_data}}
+  --output_model_dir ${{outputs.output_model_dir}}
+  --output_metrics_dir ${{outputs.output_metrics_dir}}
+  --model_name ${{inputs.model_name}}

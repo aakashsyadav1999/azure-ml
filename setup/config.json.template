@@ -1,0 +1,8 @@
+# Configuration template for Azure ML workspace
+# Copy this to .azureml/config.json and fill in your values
+
+{
+    "subscription_id": "YOUR_SUBSCRIPTION_ID_HERE",
+    "resource_group": "YOUR_RESOURCE_GROUP_HERE", 
+    "workspace_name": "YOUR_WORKSPACE_NAME_HERE"
+}

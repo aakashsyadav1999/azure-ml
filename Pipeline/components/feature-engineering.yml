@@ -1,0 +1,32 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: iris_feature_engineering
+display_name: Iris Feature Engineering
+description: Apply feature engineering to Iris dataset
+
+inputs:
+  input_train_data:
+    type: uri_folder
+    description: "Input training dataset"
+  input_test_data:
+    type: uri_folder
+    description: "Input test dataset"
+
+outputs:
+  output_train_data:
+    type: uri_folder
+    description: "Processed training dataset output"
+  output_test_data:
+    type: uri_folder
+    description: "Processed test dataset output"
+
+code: ../scripts
+environment: azureml://registries/azureml/environments/sklearn-1.0/versions/1
+
+command: >-
+  python feature_engineering.py
+  --input_train_data ${{inputs.input_train_data}}
+  --input_test_data ${{inputs.input_test_data}}
+  --output_train_data ${{outputs.output_train_data}}
+  --output_test_data ${{outputs.output_test_data}}

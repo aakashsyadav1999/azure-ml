@@ -1,0 +1,34 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: iris_data_preparation
+display_name: Iris Data Preparation
+description: Generate and prepare Iris dataset for training
+
+inputs:
+  test_size:
+    type: number
+    default: 0.2
+    description: "Test set size ratio"
+  random_state:
+    type: integer
+    default: 42
+    description: "Random seed for reproducibility"
+
+outputs:
+  output_train_data:
+    type: uri_folder
+    description: "Training dataset output"
+  output_test_data:
+    type: uri_folder
+    description: "Test dataset output"
+
+code: ../scripts
+environment: azureml://registries/azureml/environments/sklearn-1.0/versions/1
+
+command: >-
+  python data_preparation.py
+  --output_train_data ${{outputs.output_train_data}}
+  --output_test_data ${{outputs.output_test_data}}
+  --test_size ${{inputs.test_size}}
+  --random_state ${{inputs.random_state}}
