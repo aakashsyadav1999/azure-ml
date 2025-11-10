@@ -24,10 +24,10 @@ from sklearn.pipeline import Pipeline
 
 def parse_args():
     parser = argparse.ArgumentParser("train-model")
-    parser.add_argument("--input_train_data", type=str, help="Path to training data")
-    parser.add_argument("--input_test_data", type=str, help="Path to test data")
-    parser.add_argument("--output_model_dir", type=str, help="Directory to save trained models")
-    parser.add_argument("--output_metrics_dir", type=str, help="Directory to save metrics")
+    parser.add_argument("--input_train_data", type=str, help="Path to training data", default="./data")
+    parser.add_argument("--input_test_data", type=str, help="Path to test data", default="./data")
+    parser.add_argument("--output_model_dir", type=str, help="Directory to save trained models", default="./outputs")
+    parser.add_argument("--output_metrics_dir", type=str, help="Directory to save metrics", default="./outputs")
     parser.add_argument("--model_name", type=str, default="iris-classifier", help="Model name for MLflow")
     
     return parser.parse_args()
@@ -35,6 +35,43 @@ def parse_args():
 
 def load_data(input_train_data, input_test_data):
     """Load training and test data"""
+    
+    # Check if input data exists, if not generate it
+    if not os.path.exists(input_train_data) or not any(f.endswith('.csv') for f in os.listdir(input_train_data) if os.path.isfile(os.path.join(input_train_data, f))):
+        print("📊 Input data not found, generating Iris dataset...")
+        from sklearn.datasets import load_iris
+        from sklearn.model_selection import train_test_split
+        
+        # Create data directories
+        os.makedirs(input_train_data, exist_ok=True)
+        os.makedirs(input_test_data, exist_ok=True)
+        
+        # Load iris dataset
+        iris = load_iris()
+        X, y = iris.data, iris.target
+        
+        # Split the data
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
+        
+        # Create DataFrames
+        feature_names = iris.feature_names
+        train_df = pd.DataFrame(X_train, columns=feature_names)
+        train_df['target'] = y_train
+        
+        test_df = pd.DataFrame(X_test, columns=feature_names)
+        test_df['target'] = y_test
+        
+        # Save to files
+        train_df.to_csv(os.path.join(input_train_data, 'train_data.csv'), index=False)
+        test_df.to_csv(os.path.join(input_test_data, 'test_data.csv'), index=False)
+        
+        print(f"✅ Generated training data: {train_df.shape}")
+        print(f"✅ Generated test data: {test_df.shape}")
+        
+        return train_df, test_df
+    
     # Load training data
     train_files = [f for f in os.listdir(input_train_data) if f.endswith('.csv')]
     train_dfs = []

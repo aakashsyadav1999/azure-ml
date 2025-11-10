@@ -8,11 +8,8 @@ import argparse
 import yaml
 from pathlib import Path
 from datetime import datetime
-from azure.ai.ml import MLClient, Input
+from azure.ai.ml import MLClient, Input, command
 from azure.ai.ml.entities import AmlCompute, Environment
-from azure.ai.ml.dsl import pipeline
-from azure.ai.ml import load_component
-from azure.ai.ml.constants import AssetTypes
 from azure.identity import DefaultAzureCredential, AzureCliCredential
 
 
@@ -120,68 +117,43 @@ dependencies:
         return created_env
 
 
-@pipeline(name="iris_training_pipeline", description="Complete Iris classification training pipeline")
-def build_training_pipeline(model_name: str):
-    """Build the complete training pipeline"""
+def create_training_job(ml_client, compute_name, environment, model_name, experiment_name):
+    """Create and submit a training job using command components"""
     
-    # Load components
-    component_dir = Path("Pipeline/components")
+    print(f"🚀 Creating training job for model: {model_name}")
     
-    data_prep = load_component(source=str(component_dir / "data-preparation.yml"))
-    feature_eng = load_component(source=str(component_dir / "feature-engineering.yml"))
-    train_model = load_component(source=str(component_dir / "train-model.yml"))
-    register_model = load_component(source=str(component_dir / "register-model.yml"))
+    # Create a simple command job that runs our training script
+    from azure.ai.ml import command
     
-    # Pipeline steps
-    step_data_prep = data_prep(
-        test_size=0.2,
-        random_state=42
+    job = command(
+        inputs={
+            "model_name": model_name
+        },
+        code="./Pipeline/scripts",
+        command="python train_model.py --model-name ${{inputs.model_name}}",
+        environment=environment,
+        compute=compute_name,
+        experiment_name=experiment_name,
+        display_name=f"Iris Training Job - {datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        description=f"Training job for {model_name} using Iris dataset"
     )
     
-    step_feature_eng = feature_eng(
-        input_train_data=step_data_prep.outputs.output_train_data,
-        input_test_data=step_data_prep.outputs.output_test_data
-    )
-    
-    step_train = train_model(
-        input_train_data=step_feature_eng.outputs.output_train_data,
-        input_test_data=step_feature_eng.outputs.output_test_data,
-        model_name=model_name
-    )
-    
-    step_register = register_model(
-        input_model_dir=step_train.outputs.output_model_dir,
-        input_metrics_dir=step_train.outputs.output_metrics_dir,
-        model_name=model_name,
-        model_description=f"Iris classification model - {model_name}"
-    )
-    
-    return {
-        "trained_model": step_train.outputs.output_model_dir,
-        "model_metrics": step_train.outputs.output_metrics_dir,
-        "registration_status": step_register
-    }
+    return job
 
 
 def submit_pipeline(ml_client, compute_name, environment, model_name, experiment_name):
-    """Submit the training pipeline"""
+    """Submit the training job"""
     
-    print(f"🚀 Building pipeline for model: {model_name}")
+    print(f"🚀 Building training job for model: {model_name}")
     
-    # Create pipeline job
-    pipeline_job = build_training_pipeline(model_name=model_name)
+    # Create training job
+    training_job = create_training_job(ml_client, compute_name, environment, model_name, experiment_name)
     
-    # Configure pipeline settings
-    pipeline_job.settings.default_compute = compute_name
-    pipeline_job.settings.default_datastore = "workspaceblobstore"
-    pipeline_job.settings.force_rerun = True
-    pipeline_job.display_name = f"Iris Training Pipeline - {datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
-    print(f"📤 Submitting pipeline to experiment: {experiment_name}")
+    print(f"📤 Submitting job to experiment: {experiment_name}")
     
     # Submit job
     submitted_job = ml_client.jobs.create_or_update(
-        pipeline_job, 
+        training_job, 
         experiment_name=experiment_name
     )
     
@@ -226,20 +198,22 @@ def main():
         
         if args.wait_for_completion:
             print("⏳ Waiting for job completion...")
-            ml_client.jobs.stream(job.name)
-            
-            # Check job status
-            completed_job = ml_client.jobs.get(job.name)
-            if completed_job.status == "Completed":
-                print("✅ Pipeline completed successfully!")
-            else:
-                print(f"❌ Pipeline failed with status: {completed_job.status}")
-                sys.exit(1)
+            if job and job.name:
+                ml_client.jobs.stream(job.name)
+                
+                # Check job status
+                completed_job = ml_client.jobs.get(job.name)
+                if completed_job.status == "Completed":
+                    print("✅ Pipeline completed successfully!")
+                else:
+                    print(f"❌ Pipeline failed with status: {completed_job.status}")
+                    sys.exit(1)
         else:
-            print("🔄 Pipeline submitted. Check Azure ML Studio for progress.")
+            print("🔄 Job submitted. Check Azure ML Studio for progress.")
         
-        print("\n🎯 Pipeline Summary:")
-        print(f"   - Job URL: https://ml.azure.com/runs/{job.name}")
+        print("\n🎯 Job Summary:")
+        if job and job.name:
+            print(f"   - Job URL: https://ml.azure.com/runs/{job.name}")
         print(f"   - Experiment: {args.experiment_name}")
         print(f"   - Model: {args.model_name}")
         print("   - Components: Data Prep → Feature Engineering → Training → Registration")
