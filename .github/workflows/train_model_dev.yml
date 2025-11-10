@@ -9,6 +9,8 @@ on:
       - 'Pipeline/**'
       - 'environments/**'
       - '.github/workflows/**'
+      - 'config/**'
+      - '.azureml/**'
   workflow_dispatch:
     inputs:
       model_name:

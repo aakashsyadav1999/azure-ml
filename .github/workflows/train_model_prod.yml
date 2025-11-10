@@ -1,21 +1,22 @@
 name: "PROD - Train Model"
 
-# Trigger on master/main branch pushes
+# Trigger on main branch pushes and manual dispatch
 on:
   push:
     branches:
       - main
-      - master
     paths:
       - 'Pipeline/**'
       - 'environments/**'
       - '.github/workflows/**'
+      - 'config/**'
+      - '.azureml/**'
   workflow_dispatch:
     inputs:
       model_name:
         description: 'Model name for registration'
         required: false
-        default: 'iris-classifier'
+        default: 'iris-classifier-prod'
 
 permissions:
   id-token: write
