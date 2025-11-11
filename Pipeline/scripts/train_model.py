@@ -199,9 +199,26 @@ def train_models(X_train, X_test, y_train, y_test):
             
             trained_models[model_name] = pipeline
             
-            # Log model artifact
-            mlflow.sklearn.log_model(pipeline, f"model_{model_name.lower()}")
-            
+            # Log model artifact with simple approach
+            try:
+                import mlflow.sklearn
+                # Use a simpler approach without registered model
+                model_path = f"models/{model_name.lower()}"
+                mlflow.sklearn.log_model(
+                    sk_model=pipeline,
+                    artifact_path=model_path
+                )
+                print(f"✅ Model logged to MLflow: {model_path}")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not log model to MLflow: {str(e)[:100]}...")
+                # Save model locally as fallback
+                try:
+                    os.makedirs("./models", exist_ok=True)
+                    joblib.dump(pipeline, f"./models/{model_name.lower()}_model.pkl")
+                    print(f"✅ Model saved locally: ./models/{model_name.lower()}_model.pkl")
+                except Exception as save_error:
+                    print(f"⚠️ Could not save model: {str(save_error)[:50]}...")
+                
             print(f"✅ {model_name} - Accuracy: {accuracy:.4f}, F1: {f1:.4f}")
     
     return results, trained_models
@@ -304,8 +321,23 @@ def main():
         mlflow.log_metric("best_f1_score", best_results['f1_score'])
         mlflow.log_param("best_model_type", best_model_name)
         
-        # Log final model
-        mlflow.sklearn.log_model(best_model, "final_model")
+        # Log final model with simple approach
+        try:
+            import mlflow.sklearn
+            mlflow.sklearn.log_model(
+                sk_model=best_model,
+                artifact_path="final_model"
+            )
+            print("✅ Final model logged to MLflow")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not log final model to MLflow: {str(e)[:100]}...")
+            # Save final model locally as fallback
+            try:
+                os.makedirs("./models", exist_ok=True)
+                joblib.dump(best_model, "./models/best_model.pkl")
+                print("✅ Final model saved locally: ./models/best_model.pkl")
+            except Exception as save_error:
+                print(f"⚠️ Could not save final model: {str(save_error)[:50]}...")
         
     print("✅ Model training completed successfully!")
 
