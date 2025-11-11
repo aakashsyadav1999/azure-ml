@@ -201,7 +201,6 @@ def train_models(X_train, X_test, y_train, y_test):
             
             # Log model artifact with simple approach
             try:
-                import mlflow.sklearn
                 # Use a simpler approach without registered model
                 model_path = f"models/{model_name.lower()}"
                 mlflow.sklearn.log_model(
@@ -323,7 +322,6 @@ def main():
         
         # Log final model with simple approach
         try:
-            import mlflow.sklearn
             mlflow.sklearn.log_model(
                 sk_model=best_model,
                 artifact_path="final_model"
