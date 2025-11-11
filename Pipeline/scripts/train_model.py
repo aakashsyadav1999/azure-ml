@@ -58,10 +58,10 @@ def load_data(input_train_data, input_test_data):
         # Create DataFrames
         feature_names = iris.feature_names
         train_df = pd.DataFrame(X_train, columns=feature_names)
-        train_df['target'] = y_train
+        train_df['species'] = y_train  # Use 'species' to match expected column name
         
         test_df = pd.DataFrame(X_test, columns=feature_names)
-        test_df['target'] = y_test
+        test_df['species'] = y_test  # Use 'species' to match expected column name
         
         # Save to files
         train_df.to_csv(os.path.join(input_train_data, 'train_data.csv'), index=False)
@@ -93,15 +93,25 @@ def load_data(input_train_data, input_test_data):
 
 def prepare_features(train_df, test_df):
     """Prepare features and targets"""
+    # Determine target column name (handle both 'species' and 'target')
+    target_col = None
+    if 'species' in train_df.columns:
+        target_col = 'species'
+    elif 'target' in train_df.columns:
+        target_col = 'target'
+    else:
+        raise ValueError("Neither 'species' nor 'target' column found in training data")
+    
     # Separate features and targets
-    feature_columns = [col for col in train_df.columns if col != 'species' and col != 'species_name']
+    feature_columns = [col for col in train_df.columns if col not in [target_col, 'species_name']]
     
     X_train = train_df[feature_columns]
-    y_train = train_df['species']
+    y_train = train_df[target_col]
     
     X_test = test_df[feature_columns]
-    y_test = test_df['species']
+    y_test = test_df[target_col]
     
+    print(f"Target column: {target_col}")
     print(f"Feature columns: {feature_columns}")
     print(f"Training set shape: {X_train.shape}")
     print(f"Test set shape: {X_test.shape}")
