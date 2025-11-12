@@ -75,15 +75,15 @@ jobs:
     - name: Training Success Notification
       if: success()
       run: |
-        echo "✅ PRODUCTION training pipeline completed successfully!"
+        echo " PRODUCTION training pipeline completed successfully!"
         echo "🔗 Check Azure ML Studio for job details"
         echo "📊 Commit: ${{ github.sha }}"
-        echo "🎯 Model: ${{ github.event.inputs.model_name || 'iris-classifier' }}"
-        echo "🚀 Model is ready for production deployment"
+        echo " Model: ${{ github.event.inputs.model_name || 'iris-classifier' }}"
+        echo " Model is ready for production deployment"
     
     - name: Training Failure Notification
       if: failure()
       run: |
-        echo "❌ PRODUCTION training pipeline failed!"
+        echo " PRODUCTION training pipeline failed!"
         echo "🔍 Please check the workflow logs for details"
         echo "💡 Common issues: Azure credentials, workspace configuration"

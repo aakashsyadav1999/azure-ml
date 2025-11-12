@@ -1,14 +1,14 @@
-# 🚀 Model Deployment Guide
+#  Model Deployment Guide
 
 This guide shows you how to deploy your trained and registered iris-classifier model when you're ready.
 
 ## Prerequisites
 
-✅ Model successfully trained and registered in Azure ML Model Registry
-✅ Azure CLI installed and logged in
-✅ Sufficient Azure quota for compute resources
+ Model successfully trained and registered in Azure ML Model Registry
+ Azure CLI installed and logged in
+ Sufficient Azure quota for compute resources
 
-## 🎯 Deployment Options
+##  Deployment Options
 
 ### Option 1: Azure CLI (Recommended)
 

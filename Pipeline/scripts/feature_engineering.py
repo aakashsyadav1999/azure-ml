@@ -47,7 +47,7 @@ def engineer_features(df):
         labels=['Small', 'Medium', 'Large']
     )
     
-    print(f"✅ Feature engineering completed. New features added:")
+    print(f" Feature engineering completed. New features added:")
     new_features = ['sepal_ratio', 'petal_ratio', 'sepal_area', 'petal_area', 
                     'total_size', 'sepal_size_category', 'petal_size_category']
     for feature in new_features:
@@ -102,8 +102,8 @@ def main():
     train_processed.to_csv(train_path, index=False)
     test_processed.to_csv(test_path, index=False)
     
-    print(f"✅ Processed training data saved to: {train_path}")
-    print(f"✅ Processed test data saved to: {test_path}")
+    print(f" Processed training data saved to: {train_path}")
+    print(f" Processed test data saved to: {test_path}")
     print("Feature engineering completed successfully!")
 
 

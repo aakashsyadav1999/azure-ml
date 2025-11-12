@@ -67,8 +67,8 @@ def load_data(input_train_data, input_test_data):
         train_df.to_csv(os.path.join(input_train_data, 'train_data.csv'), index=False)
         test_df.to_csv(os.path.join(input_test_data, 'test_data.csv'), index=False)
         
-        print(f"✅ Generated training data: {train_df.shape}")
-        print(f"✅ Generated test data: {test_df.shape}")
+        print(f" Generated training data: {train_df.shape}")
+        print(f" Generated test data: {test_df.shape}")
         
         return train_df, test_df
     
@@ -141,7 +141,7 @@ def train_models(X_train, X_test, y_train, y_test):
     trained_models = {}
     
     for model_name, config in models.items():
-        print(f"\n🔄 Training {model_name}...")
+        print(f"\n Training {model_name}...")
         
         with mlflow.start_run(nested=True, run_name=f"iris_{model_name.lower()}"):
             # Log model type
@@ -207,18 +207,18 @@ def train_models(X_train, X_test, y_train, y_test):
                     sk_model=pipeline,
                     artifact_path=model_path
                 )
-                print(f"✅ Model logged to MLflow: {model_path}")
+                print(f" Model logged to MLflow: {model_path}")
             except Exception as e:
-                print(f"⚠️ Warning: Could not log model to MLflow: {str(e)[:100]}...")
+                print(f" Warning: Could not log model to MLflow: {str(e)[:100]}...")
                 # Save model locally as fallback
                 try:
                     os.makedirs("./models", exist_ok=True)
                     joblib.dump(pipeline, f"./models/{model_name.lower()}_model.pkl")
-                    print(f"✅ Model saved locally: ./models/{model_name.lower()}_model.pkl")
+                    print(f" Model saved locally: ./models/{model_name.lower()}_model.pkl")
                 except Exception as save_error:
-                    print(f"⚠️ Could not save model: {str(save_error)[:50]}...")
+                    print(f" Could not save model: {str(save_error)[:50]}...")
                 
-            print(f"✅ {model_name} - Accuracy: {accuracy:.4f}, F1: {f1:.4f}")
+            print(f" {model_name} - Accuracy: {accuracy:.4f}, F1: {f1:.4f}")
     
     return results, trained_models
 
@@ -270,10 +270,10 @@ def save_models_and_metrics(trained_models, results, output_model_dir, output_me
     with open(latest_metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2, default=str)
     
-    print(f"✅ Best model saved: {model_path}")
-    print(f"✅ Latest model link: {latest_model_path}")
-    print(f"✅ Metadata saved: {metadata_path}")
-    print(f"✅ Latest metadata link: {latest_metadata_path}")
+    print(f" Best model saved: {model_path}")
+    print(f" Latest model link: {latest_model_path}")
+    print(f" Metadata saved: {metadata_path}")
+    print(f" Latest metadata link: {latest_metadata_path}")
     
     return best_model, metadata
 
@@ -326,18 +326,18 @@ def main():
                 sk_model=best_model,
                 artifact_path="final_model"
             )
-            print("✅ Final model logged to MLflow")
+            print(" Final model logged to MLflow")
         except Exception as e:
-            print(f"⚠️ Warning: Could not log final model to MLflow: {str(e)[:100]}...")
+            print(f" Warning: Could not log final model to MLflow: {str(e)[:100]}...")
             # Save final model locally as fallback
             try:
                 os.makedirs("./models", exist_ok=True)
                 joblib.dump(best_model, "./models/best_model.pkl")
-                print("✅ Final model saved locally: ./models/best_model.pkl")
+                print(" Final model saved locally: ./models/best_model.pkl")
             except Exception as save_error:
-                print(f"⚠️ Could not save final model: {str(save_error)[:50]}...")
+                print(f" Could not save final model: {str(save_error)[:50]}...")
         
-    print("✅ Model training completed successfully!")
+    print(" Model training completed successfully!")
 
 
 if __name__ == "__main__":

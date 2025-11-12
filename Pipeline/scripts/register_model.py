@@ -37,7 +37,7 @@ def load_model_metadata(input_metrics_dir):
     with open(metadata_path, 'r') as f:
         metadata = json.load(f)
     
-    print(f"✅ Loaded metadata: {metadata['model_name']}")
+    print(f" Loaded metadata: {metadata['model_name']}")
     print(f"   - Best model type: {metadata['best_model_type']}")
     print(f"   - Accuracy: {metadata['accuracy']:.4f}")
     print(f"   - Timestamp: {metadata['timestamp']}")
@@ -76,7 +76,7 @@ def register_with_mlflow(input_model_dir, model_name, metadata):
             registered_model_name=model_name
         )
         
-        print(f"✅ Model registered with MLflow: {model_info.model_uri}")
+        print(f" Model registered with MLflow: {model_info.model_uri}")
         return model_info
 
 
@@ -110,7 +110,7 @@ def register_with_azure_ml(input_model_dir, model_name, model_description, metad
         # Register the model
         registered_model = ml_client.models.create_or_update(model_entity)
         
-        print(f"✅ Model registered with Azure ML:")
+        print(f" Model registered with Azure ML:")
         print(f"   - Name: {registered_model.name}")
         print(f"   - Version: {registered_model.version}")
         print(f"   - ID: {registered_model.id}")
@@ -118,7 +118,7 @@ def register_with_azure_ml(input_model_dir, model_name, model_description, metad
         return registered_model
         
     except Exception as e:
-        print(f"⚠️  Azure ML registration failed: {str(e)}")
+        print(f"  Azure ML registration failed: {str(e)}")
         print("   Model registration will continue with MLflow only")
         return None
 
@@ -166,8 +166,8 @@ def main():
     with open(summary_path, 'w') as f:
         json.dump(registration_summary, f, indent=2, default=str)
     
-    print(f"✅ Registration summary saved: {summary_path}")
-    print("✅ Model registration completed successfully!")
+    print(f" Registration summary saved: {summary_path}")
+    print(" Model registration completed successfully!")
 
 
 if __name__ == "__main__":

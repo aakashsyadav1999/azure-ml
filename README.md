@@ -2,7 +2,7 @@
 
 This repository demonstrates enterprise-grade Machine Learning Operations (MLOps) practices using Azure Machine Learning and GitHub Actions, following industry best practices and patterns.
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 ```
 azure_ml_trial/
@@ -19,9 +19,9 @@ azure_ml_trial/
 └── data/                     # Dataset storage
 ```
 
-## 🎯 Key Features
+##  Key Features
 
-- **🔄 Component-Based Pipeline**: Modular, reusable ML components
+- ** Component-Based Pipeline**: Modular, reusable ML components
 - **🌍 Environment Separation**: Dev/Prod workflows with proper governance
 - **📊 MLflow Integration**: Comprehensive experiment tracking and model comparison
 - **🤖 Automated CI/CD**: GitHub Actions for seamless deployments
@@ -29,7 +29,7 @@ azure_ml_trial/
 - **📈 Model Registry**: Automatic model versioning and registration
 - **🧪 A/B Testing Ready**: Multiple model comparison and selection
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 
@@ -40,7 +40,7 @@ azure_ml_trial/
 
 ### 1. Setup Azure Integration
 
-⚠️ **IMPORTANT**: Before running any workflows, configure GitHub repository secrets:
+ **IMPORTANT**: Before running any workflows, configure GitHub repository secrets:
 
 1. **Navigate to Repository Settings**:
    - Go to `https://github.com/your-username/azure-ml/settings/secrets/actions`
@@ -140,7 +140,7 @@ All training runs include comprehensive tracking:
 
 Access MLflow UI through Azure ML Studio → Experiments
 
-## 🔄 CI/CD Workflows
+##  CI/CD Workflows
 
 ### Development Workflow (`train_model_dev.yml`)
 - Triggers on `dev` branch pushes
@@ -250,11 +250,11 @@ mlflow ui
 
 ## 🔒 Security Best Practices
 
-- ✅ Service principal authentication
-- ✅ Environment-based secret management  
-- ✅ Least privilege access principles
-- ✅ Audit trail through Git and Azure logs
-- ✅ No credentials in code or configs
+-  Service principal authentication
+-  Environment-based secret management  
+-  Least privilege access principles
+-  Audit trail through Git and Azure logs
+-  No credentials in code or configs
 
 ## 📚 Additional Resources
 

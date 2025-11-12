@@ -84,8 +84,8 @@ def main():
     train_df.to_csv(train_path, index=False)
     test_df.to_csv(test_path, index=False)
     
-    print(f"✅ Training data saved to: {train_path}")
-    print(f"✅ Test data saved to: {test_path}")
+    print(f" Training data saved to: {train_path}")
+    print(f" Test data saved to: {test_path}")
     print("Data preparation completed successfully!")
 
 
